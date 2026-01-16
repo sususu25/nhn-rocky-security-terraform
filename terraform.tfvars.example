@@ -1,0 +1,21 @@
+# terraform.tfvars.example
+
+region     = "KR1"
+auth_url   = "https://api-identity-.../v2.0"
+tenant_id  = "YOUR_TENANT_ID"
+user_name  = "YOUR_USER_NAME"
+password   = "YOUR_API_PASSWORD"
+
+vpc_id     = "YOUR_VPC_UUID"
+vpc_name   = "YOUR_VPC_NAME"
+
+subnet_id      = "YOUR_SUBNET_UUID"
+subnet_name    = "YOUR_SUBNET_NAME"
+subnet_shared  = false
+
+keypair_name = "YOUR_KEYPAIR_NAME"
+flavor_name  = "YOUR_FLAVOR_NAME"
+image_name   = "YOUR_IMAGE_NAME"
+
+instance_name = "tf-rocky-01"
+my_ip_cidr    = "YOUR_PUBLIC_IP/32"
