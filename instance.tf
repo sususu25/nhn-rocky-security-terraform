@@ -21,3 +21,17 @@ resource "nhncloud_compute_instance_v2" "rocky" {
     delete_on_termination = true
   }
 }
+
+# 플로팅 IP 생성
+resource "nhncloud_networking_floatingip_v2" "fip_01" {
+  count  = var.create_floating_ip ? 1 : 0
+  pool   = var.floating_ip_pool
+  region = var.region
+}
+
+# 플로팅 IP 연결
+resource "nhncloud_networking_floatingip_associate_v2" "fip_associate" {
+  count       = var.create_floating_ip ? 1 : 0
+  floating_ip = nhncloud_networking_floatingip_v2.fip_01[0].address
+  port_id     = nhncloud_networking_port_v2.rocky_port.id
+}

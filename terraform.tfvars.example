@@ -19,3 +19,6 @@ image_name   = "YOUR_IMAGE_NAME"
 
 instance_name = "tf-rocky-01"
 my_ip_cidr    = "YOUR_PUBLIC_IP/32"
+
+create_floating_ip = true
+floating_ip_pool = "YOUR_FIP_POOL"

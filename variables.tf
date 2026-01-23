@@ -62,5 +62,19 @@ variable "image_name" {
 # SG 룰에서 사용할 내 IP 대역 (SSH 제한용) - 접속 PC의 공인 IP 확인 후 /32 형식으로 입력
 variable "my_ip_cidr" {
   type    = string
-  default = "SSH 허용 CIDR (예: 203.0.113.10/32). 보안상 0.0.0.0/0는 권장하지 않음."
+  default = "210.120.112.168/32"
+  #default = "SSH 허용 CIDR (예: 203.0.113.10/32). 보안상 0.0.0.0/0는 권장하지 않음."
+}
+
+# Floating IP 설정
+variable "create_floating_ip" {
+  type    = bool
+  default = true
+  description = "Floating IP 생성 여부"
+}
+
+variable "floating_ip_pool" {
+  type    = string
+  default = "public"
+  description = "Floating IP를 할당받을 네트워크 풀"
 }
