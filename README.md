@@ -10,6 +10,7 @@
 - Security Group 1개
 - SSH(22/tcp) Ingress Rule 1개 (지정 CIDR만 허용)
 - Compute Instance 1대 (이미지 기반 루트 볼륨 생성)
+- Floating IP
 
 ## 전제 조건 (기존에 존재해야 하며 Terraform이 조회)
 - VPC: `vpc_id`, `vpc_name`
@@ -57,6 +58,7 @@ clear change tracking, and improved operational efficiency.
 - One Security Group
 - One SSH (22/tcp) ingress rule (restricted to a specified CIDR)
 - One Compute instance (root volume created from an image)
+- Floating IP
 
 ## Prerequisites (Must already exist and are looked up by Terraform)
 - VPC: `vpc_id`, `vpc_name`
