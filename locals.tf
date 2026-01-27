@@ -1,6 +1,7 @@
 locals {
   service_subnet_id = var.service_subnet_id != "" ? var.service_subnet_id : var.subnet_id
   lb_enabled        = var.exposure_mode == "lb"
+  bastion_enabled   = var.exposure_mode == "lb" && var.bastion_enabled
 
   # ✅ 추가: 백엔드 목록(키=rocky-01, rocky-02...) 생성
   backends = {

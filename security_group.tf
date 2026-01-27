@@ -4,13 +4,28 @@ resource "nhncloud_networking_secgroup_v2" "ssh_sg" {
 }
 
 # SSH(22) 인바운드
+# SSH(22) 인바운드
+# - fip 모드: 내 PC(my_ip_cidr)에서 백엔드로 직접 접속 허용
+# - lb  모드: 백엔드로의 22는 Bastion에서만 허용 (공인 노출 최소화)
 resource "nhncloud_networking_secgroup_rule_v2" "ssh_in" {
+  count             = var.exposure_mode == "fip" ? 1 : 0
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
   port_range_min    = 22
   port_range_max    = 22
   remote_ip_prefix  = var.my_ip_cidr
+  security_group_id = nhncloud_networking_secgroup_v2.ssh_sg.id
+}
+
+resource "nhncloud_networking_secgroup_rule_v2" "ssh_from_bastion" {
+  count             = local.bastion_enabled ? 1 : 0
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 22
+  port_range_max    = 22
+  remote_group_id   = nhncloud_networking_secgroup_v2.bastion_sg[0].id
   security_group_id = nhncloud_networking_secgroup_v2.ssh_sg.id
 }
 

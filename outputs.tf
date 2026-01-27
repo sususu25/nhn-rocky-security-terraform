@@ -40,3 +40,16 @@ output "backend_service_private_ips" {
   description = "Backend service port private IPs (one per instance)"
   value       = { for k in sort(keys(local.backends)) : k => nhncloud_networking_port_v2.service_port[k].all_fixed_ips[0] }
 }
+
+########################################
+# 6) Bastion outputs (lb 모드에서만)
+########################################
+output "bastion_fip" {
+  description = "Bastion floating IP (only in lb mode)"
+  value       = local.bastion_enabled ? nhncloud_networking_floatingip_v2.bastion_fip[0].address : null
+}
+
+output "bastion_mgmt_private_ip" {
+  description = "Bastion mgmt private IP (only in lb mode)"
+  value       = local.bastion_enabled ? nhncloud_networking_port_v2.bastion_mgmt_port[0].all_fixed_ips[0] : null
+}

@@ -30,6 +30,15 @@ resource "nhncloud_networking_port_v2" "mgmt_port" {
     }
   }
 
+  # HA VIP 허용 (네트워크 레벨)
+  dynamic "allowed_address_pairs" {
+    for_each = (var.ha_vip_enabled && trimspace(var.ha_vip_address) != "") ? [1] : []
+    content {
+      ip_address = var.ha_vip_address
+    }
+  }
+
+
   security_group_ids = [
     nhncloud_networking_secgroup_v2.ssh_sg.id
   ]
@@ -58,6 +67,15 @@ resource "nhncloud_networking_port_v2" "service_port" {
       subnet_id = var.subnet_id
     }
   }
+
+  # HA VIP 허용 (네트워크 레벨)
+  dynamic "allowed_address_pairs" {
+    for_each = (var.ha_vip_enabled && trimspace(var.ha_vip_address) != "") ? [1] : []
+    content {
+      ip_address = var.ha_vip_address
+    }
+  }
+
 
   security_group_ids = [
     nhncloud_networking_secgroup_v2.service_sg.id

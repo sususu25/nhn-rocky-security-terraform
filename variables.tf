@@ -61,9 +61,14 @@ variable "image_name" {
 
 # SG 룰에서 사용할 내 IP 대역 (SSH 제한용) - 접속 PC의 공인 IP 확인 후 /32 형식으로 입력
 variable "my_ip_cidr" {
-  type    = string
-  default = "210.120.112.168/32"
-  #default = "SSH 허용 CIDR (예: 203.0.113.10/32). 보안상 0.0.0.0/0는 권장하지 않음."
+  type        = string
+  description = "Your public IP in CIDR (e.g., 203.0.113.10/32). Used to allow SSH to bastion."
+  # default = null  (아예 default 제거)
+
+  validation {
+    condition     = can(regex("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$", var.my_ip_cidr))
+    error_message = "my_ip_cidr must be in CIDR format like 203.0.113.10/32"
+  }
 }
 
 # Floating IP 설정
@@ -130,3 +135,39 @@ variable "backend_service_fixed_ips" {
   default     = []
 }
 
+
+########################################
+# Bastion (LB 모드에서 SSH 진입점)
+########################################
+variable "bastion_enabled" {
+  type        = bool
+  description = "LB 모드에서 Bastion(점프 서버) 생성 여부"
+  default     = true
+}
+
+variable "bastion_name" {
+  type        = string
+  description = "Bastion 인스턴스 이름"
+  default     = "security-bastion"
+}
+
+variable "bastion_mgmt_fixed_ip" {
+  type        = string
+  description = "Bastion mgmt 포트 사설 IP 고정(옵션). 빈 값이면 자동 할당."
+  default     = ""
+}
+
+########################################
+# HA VIP (allowed_address_pairs)
+########################################
+variable "ha_vip_enabled" {
+  type        = bool
+  description = "HA 구성 시, 포트에 VIP를 허용(allowed_address_pairs)할지 여부"
+  default     = false
+}
+
+variable "ha_vip_address" {
+  type        = string
+  description = "HA에서 사용할 VIP(사설). ha_vip_enabled=true 일 때만 사용."
+  default     = ""
+}
