@@ -1,4 +1,3 @@
-
 ########################################
 # (1) 관리용 포트: SSH/FIP 붙는 NIC (인스턴스별 1개)
 ########################################
@@ -14,7 +13,7 @@ resource "nhncloud_networking_port_v2" "mgmt_port" {
       trimspace(var.mgmt_fixed_ips[each.value.index]) != ""
     ) ? [1] : []
     content {
-      subnet_id  = var.subnet_id
+      subnet_id  = local.mgmt_subnet_id
       ip_address = var.mgmt_fixed_ips[each.value.index]
     }
   }
@@ -26,18 +25,9 @@ resource "nhncloud_networking_port_v2" "mgmt_port" {
       trimspace(var.mgmt_fixed_ips[each.value.index]) != ""
     ) ? [] : [1]
     content {
-      subnet_id = var.subnet_id
+      subnet_id = local.mgmt_subnet_id
     }
   }
-
-  # HA VIP 허용 (네트워크 레벨)
-  dynamic "allowed_address_pairs" {
-    for_each = (var.ha_vip_enabled && trimspace(var.ha_vip_address) != "") ? [1] : []
-    content {
-      ip_address = var.ha_vip_address
-    }
-  }
-
 
   security_group_ids = [
     nhncloud_networking_secgroup_v2.ssh_sg.id
@@ -49,37 +39,31 @@ resource "nhncloud_networking_port_v2" "mgmt_port" {
 # (2) 서비스용 포트: LB/VIP가 바라보는 NIC
 ########################################
 resource "nhncloud_networking_port_v2" "service_port" {
-  for_each   = local.backends
+  for_each = local.backends
+
   name       = "security-service-port-${each.key}"
   network_id = var.vpc_id
-
-  dynamic "fixed_ip" {
-    for_each = each.value.service_ip != null ? [1] : []
-    content {
-      subnet_id  = var.subnet_id
-      ip_address = each.value.service_ip
-    }
-  }
-
-  dynamic "fixed_ip" {
-    for_each = each.value.service_ip == null ? [1] : []
-    content {
-      subnet_id = var.subnet_id
-    }
-  }
-
-  # HA VIP 허용 (네트워크 레벨)
-  dynamic "allowed_address_pairs" {
-    for_each = (var.ha_vip_enabled && trimspace(var.ha_vip_address) != "") ? [1] : []
-    content {
-      ip_address = var.ha_vip_address
-    }
-  }
-
 
   security_group_ids = [
     nhncloud_networking_secgroup_v2.service_sg.id
   ]
+
+  # 고정 IP 주면 사용
+  dynamic "fixed_ip" {
+    for_each = each.value.service_fixed_ip != null ? [1] : []
+    content {
+      subnet_id  = local.service_subnet_id
+      ip_address = each.value.service_fixed_ip
+    }
+  }
+
+  # 고정 IP 안 주면 subnet만 지정해서 자동 할당 (중요!)
+  dynamic "fixed_ip" {
+    for_each = each.value.service_fixed_ip != null ? [] : [1]
+    content {
+      subnet_id = local.service_subnet_id
+    }
+  }
 }
 
 

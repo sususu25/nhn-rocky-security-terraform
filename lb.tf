@@ -45,7 +45,7 @@ resource "nhncloud_lb_monitor_v2" "security_monitor" {
 resource "nhncloud_lb_member_v2" "security_member" {
   for_each       = local.lb_enabled ? local.backends : {}
   pool_id        = nhncloud_lb_pool_v2.security_pool[0].id
-  subnet_id      = data.nhncloud_networking_vpcsubnet_v2.target_subnet.id
+  subnet_id      = local.service_subnet_id
   address        = nhncloud_networking_port_v2.service_port[each.key].all_fixed_ips[0]
   protocol_port  = var.service_target_port
   weight         = 1

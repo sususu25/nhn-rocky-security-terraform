@@ -130,9 +130,9 @@ variable "backend_count" {
 }
 
 variable "backend_service_fixed_ips" {
-  type        = list(string)
-  description = "Fixed private IPs for each backend service port (same order as instances). If empty, auto-assign."
-  default     = []
+  type        = map(string)
+  description = "Fixed private IPs for backend service ports, keyed by backend name (e.g., rocky-01)."
+  default     = {}
 }
 
 
@@ -171,3 +171,12 @@ variable "ha_vip_address" {
   description = "HA에서 사용할 VIP(사설). ha_vip_enabled=true 일 때만 사용."
   default     = ""
 }
+
+variable "mgmt_subnet_id" {
+  type        = string
+  description = "Subnet ID for management NIC"
+  default     = ""
+}
+
+
+

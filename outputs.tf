@@ -37,8 +37,10 @@ output "backend_mgmt_fips" {
 # 5) 백엔드 service Private IPs (LB가 물리는 백엔드)
 ########################################
 output "backend_service_private_ips" {
-  description = "Backend service port private IPs (one per instance)"
-  value       = { for k in sort(keys(local.backends)) : k => nhncloud_networking_port_v2.service_port[k].all_fixed_ips[0] }
+  value = {
+    for k, p in nhncloud_networking_port_v2.service_port :
+    k => p.all_fixed_ips[0]
+  }
 }
 
 ########################################
