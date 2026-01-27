@@ -68,13 +68,65 @@ variable "my_ip_cidr" {
 
 # Floating IP 설정
 variable "create_floating_ip" {
-  type    = bool
-  default = true
+  type        = bool
+  default     = true
   description = "Floating IP 생성 여부"
 }
 
 variable "floating_ip_pool" {
-  type    = string
-  default = "public"
+  type        = string
+  default     = "public"
   description = "Floating IP를 할당받을 네트워크 풀"
 }
+
+# 어떤 외부 노출 방식을 쓸지
+variable "exposure_mode" {
+  type        = string
+  description = "fip(SSH용 FIP) 또는 lb(서비스용 LB VIP)"
+  default     = "fip"
+
+  validation {
+    condition     = contains(["fip", "lb"], var.exposure_mode)
+    error_message = "exposure_mode는 fip 또는 lb만 가능합니다."
+  }
+}
+
+# 서비스용(내부) 서브넷: LB/VIP가 붙는 쪽
+variable "service_subnet_id" {
+  type        = string
+  description = "서비스 트래픽(예: 80/443)이 흐르는 서브넷 ID. 비워두면 subnet_id를 재사용."
+  default     = ""
+}
+
+# 서비스 포트 (LB가 멤버로 전달할 포트)
+variable "service_target_port" {
+  type        = number
+  description = "LB가 백엔드(인스턴스)로 전달할 포트"
+  default     = 80
+}
+
+# LB VIP 고정 (옵션)
+variable "lb_vip_address" {
+  type        = string
+  description = "LB VIP를 고정 IP로 지정(옵션). 빈 값이면 자동 할당."
+  default     = ""
+}
+
+variable "mgmt_fixed_ips" {
+  type        = list(string)
+  description = "Fixed private IPs for mgmt ports (same order as backends). If empty, auto-assign."
+  default     = []
+}
+
+variable "backend_count" {
+  type        = number
+  description = "Number of backend instances"
+  default     = 3
+}
+
+variable "backend_service_fixed_ips" {
+  type        = list(string)
+  description = "Fixed private IPs for each backend service port (same order as instances). If empty, auto-assign."
+  default     = []
+}
+

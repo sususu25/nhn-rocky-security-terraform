@@ -1,5 +1,14 @@
 # terraform.tfvars.example
 
+exposure_mode = "fip" or "lb"
+service_target_port = TARGET_PORT_No. #lb를 사용할 경우 적용됨
+
+backend_count = 3
+backend_service_fixed_ips = ["10.0.1.50", "10.0.1.51", "10.0.1.52"]
+
+lb_vip_address = "YOUR_VIP" #지정 불필요할 경우 ""혹은 주석처리 요망
+#mgmt_fixed_ips = ["Fixed_IP", "Fixed_IP", "Fixed_IP"] # mgmt 고정이 필요할 경우 사용
+
 region     = "KR1"
 auth_url   = "https://api-identity-.../v2.0"
 tenant_id  = "YOUR_TENANT_ID"
