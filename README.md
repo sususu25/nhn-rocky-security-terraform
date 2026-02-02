@@ -6,6 +6,18 @@
 인프라 구성을 코드로 표준화함으로써 환경 간 구성 편차를 제거하고,
 변경 이력을 코드로 관리하여 운영 효율성과 재현성을 확보하는 것을 목표로 합니다.
 
+## Directory Structure
+
+- provider.tf        : Cloud provider 설정
+- versions.tf        : Terraform / Provider 버전 고정
+- variables.tf       : 입력 변수 정의
+- terraform.tfvars   : 환경별 실제 값
+- instance.tf        : Compute 인스턴스 정의
+- security_group.tf  : 보안그룹 및 포트 정책
+- lb.tf              : Load Balancer 설정
+- bastion.tf         : Bastion 호스트 구성
+- outputs.tf         : 주요 리소스 출력값
+
 ## 생성 리소스 (Terraform이 생성)
 - Security Group 
     - ssh_sg(22)
@@ -90,7 +102,17 @@
 This project is a Terraform (IaC) example that **provisions and manages a consistent set of instances** on NHN Cloud by **referencing existing VPCs and Subnets**.
 By standardizing infrastructure as code, it minimizes configuration drift across environments and improves operational efficiency and reproducibility by tracking changes in version control.
 
----
+## Directory Structure
+
+- provider.tf        : Cloud provider configuration
+- versions.tf        : Terraform and provider version constraints
+- variables.tf       : Input variable definitions
+- terraform.tfvars   : Environment-specific values
+- instance.tf        : Compute instance definitions
+- security_group.tf  : Security groups and port policies
+- lb.tf              : Load Balancer configuration
+- bastion.tf         : Bastion host setup
+- outputs.tf         : Key resource outputs
 
 ## Resources Created (Provisioned by Terraform)
 - Security Groups
