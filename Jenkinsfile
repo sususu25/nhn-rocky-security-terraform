@@ -1,25 +1,65 @@
 pipeline {
     agent any
 
+    options {
+        timestamps()
+    }
+
     stages {
+
         stage('Checkout') {
             steps {
-                echo '📥 Git checkout'
-                checkout scm
+                echo '📥 Source Checkout'
             }
         }
 
-        stage('Build') {
+        stage('Terraform Init') {
             steps {
-                echo '🔨 Build step'
-                sh 'echo Hello Jenkins'
+                echo '🔧 Terraform Init'
+                sh '''
+                  terraform init -backend=false
+                '''
             }
         }
 
-        stage('Done') {
+        stage('Terraform Validate') {
             steps {
-                echo '✅ Pipeline finished'
+                echo '✅ Terraform Validate'
+                sh '''
+                  terraform validate
+                '''
             }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                echo '📄 Terraform Plan'
+                sh '''
+                  terraform plan -input=false
+                '''
+            }
+        }
+
+        stage('Shell Script Test') {
+            steps {
+                echo '🧪 Shell script execution'
+                sh '''
+                  echo "Running security scripts..."
+                  ls -al
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '🎉 Pipeline SUCCESS'
+        }
+        failure {
+            echo '❌ Pipeline FAILED'
+        }
+        always {
+            echo '🧹 Pipeline finished'
         }
     }
 }
