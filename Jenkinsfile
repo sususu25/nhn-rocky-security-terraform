@@ -1,65 +1,41 @@
 pipeline {
     agent any
 
-    options {
-        timestamps()
-    }
-
     stages {
-
-        stage('Checkout') {
-            steps {
-                echo '📥 Source Checkout'
-            }
-        }
-
         stage('Terraform Init') {
             steps {
-                echo '🔧 Terraform Init'
-                sh '''
-                  terraform init -backend=false
-                '''
+                sh 'terraform init'
             }
         }
 
         stage('Terraform Validate') {
             steps {
-                echo '✅ Terraform Validate'
-                sh '''
-                  terraform validate
-                '''
+                sh 'terraform validate'
             }
         }
 
         stage('Terraform Plan') {
             steps {
-                echo '📄 Terraform Plan'
-                sh '''
-                  terraform plan -input=false
-                '''
-            }
-        }
-
-        stage('Shell Script Test') {
-            steps {
-                echo '🧪 Shell script execution'
-                sh '''
-                  echo "Running security scripts..."
-                  ls -al
-                '''
+                withCredentials([file(credentialsId: 'terraform-tfvars', variable: 'TFVARS')]) {
+                    sh '''
+                      terraform plan \
+                        -input=false \
+                        -var-file=$TFVARS
+                    '''
+                }
             }
         }
     }
 
     post {
+        always {
+            echo '🧹 Pipeline finished'
+        }
         success {
-            echo '🎉 Pipeline SUCCESS'
+            echo '✅ Pipeline SUCCESS'
         }
         failure {
             echo '❌ Pipeline FAILED'
-        }
-        always {
-            echo '🧹 Pipeline finished'
         }
     }
 }
