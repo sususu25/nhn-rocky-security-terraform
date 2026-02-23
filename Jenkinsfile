@@ -50,7 +50,7 @@ pipeline {
 
     stage('Terraform Plan (detect changes)') {
       steps {
-        withCredentials([file(credentialsId: 'nhn-tfvars', variable: 'TFVARS')]) {
+        withCredentials([file(credentialsId: 'terraform-tfvars', variable: 'TFVARS')]) {
           script {
             def rc = sh(
               script: 'terraform plan -input=false -var-file="$TFVARS" -detailed-exitcode -out=tfplan',
