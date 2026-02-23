@@ -18,12 +18,7 @@ pipeline {
     stage('Checkout (Ansible repo)') {
       steps {
         dir('ansible') {
-          // ✅ 방법1) 공개레포면 그냥 git URL
-          // git url: 'https://github.com/<ORG>/rocky-ansible-security.git', branch: 'main'
-
-          // ✅ 방법2) private이면 Jenkins credential로 checkout (예: ssh key / username token 등)
-          // checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[credentialsId: 'ansible-repo-cred', url: 'git@github.com:<ORG>/rocky-ansible-security.git']]])
-
+          git url: 'https://github.com/sususu25/rocky-ansible-security.git', branch: 'main'
           sh 'ls -la'
         }
       }
