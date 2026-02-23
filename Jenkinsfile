@@ -2,37 +2,12 @@ pipeline {
   agent any
 
   parameters {
-    booleanParam(name: 'APPLY', defaultValue: false, description: 'true면 terraform apply 진행(변경 있을 때만)')
-  }
-
-  environment {
-    ANSIBLE_USER = 'rocky'
-    TF_HAS_CHANGES = 'false'
+    choice(name: 'MODE', choices: ['plan', 'apply'], description: 'plan만 할지, apply까지 할지')
   }
 
   stages {
-    stage('Checkout (Terraform repo)') {
+    stage('Checkout') {
       steps { checkout scm }
-    }
-
-    stage('Checkout (Ansible repo)') {
-      steps {
-        dir('ansible') {
-          git url: 'https://github.com/sususu25/rocky-ansible-security.git', branch: 'main'
-          sh 'ls -la'
-        }
-      }
-    }
-
-    stage('Precheck: Ansible role path') {
-      steps {
-        sh '''
-          set -e
-          test -d "ansible/playbooks/roles/security_script" || (echo "❌ role not found" && exit 1)
-          test -f "ansible/playbooks/security_check.yml" || (echo "❌ playbook not found" && exit 1)
-          echo "✅ Ansible structure OK"
-        '''
-      }
     }
 
     stage('Terraform Init') {
@@ -43,84 +18,55 @@ pipeline {
       steps { sh 'terraform validate' }
     }
 
-    stage('Terraform Plan (detect changes)') {
+    stage('Terraform Plan') {
       steps {
         withCredentials([file(credentialsId: 'terraform-tfvars', variable: 'TFVARS')]) {
-          script {
-            def rc = sh(
-              script: 'terraform plan -input=false -var-file="$TFVARS" -detailed-exitcode -out=tfplan',
-              returnStatus: true
-            )
-            if (rc == 0) {
-              env.TF_HAS_CHANGES = 'false'
-              echo "✅ No changes."
-            } else if (rc == 2) {
-              env.TF_HAS_CHANGES = 'true'
-              echo "🟡 Changes detected."
-            } else {
-              error("❌ terraform plan failed (exit=${rc})")
-            }
-          }
+          sh '''
+            set -e
+            terraform plan -input=false -var-file="$TFVARS" -out=tfplan
+          '''
         }
       }
     }
 
     stage('Terraform Apply') {
-      when { expression { return params.APPLY && env.TF_HAS_CHANGES == 'true' } }
+      when { expression { return params.MODE == 'apply' } }
       steps {
-        input message: "변경 감지됨. apply 진행?", ok: "APPLY"
-        sh 'terraform apply -input=false -auto-approve tfplan'
-      }
-    }
-
-    stage('Export TF Outputs -> Inventory') {
-      steps {
+        input message: "apply 진행할까?", ok: "APPLY"
         sh '''
-          terraform output -json > tf_output.json
-          python3 scripts/tf_inventory.py > inventory.json
-          ansible-inventory -i inventory.json --list > /dev/null
-          echo "✅ inventory.json generated"
+          set -e
+          terraform apply -input=false -auto-approve tfplan
+          echo "applied" > apply_done.txt
         '''
       }
     }
 
-    stage('Ansible Ping') {
+    stage('Export Outputs') {
       steps {
-        withCredentials([sshUserPrivateKey(credentialsId: 'bastion-ssh-key', keyFileVariable: 'SSH_KEY')]) {
-          sh '''
-            set -e
-            export ANSIBLE_PRIVATE_KEY_FILE="$SSH_KEY"
-            ansible -i inventory.json rocky_servers -m ping
-          '''
-        }
+        // apply를 안 했으면 output이 비어있을 수 있지만, 일단 파일은 남겨두자
+        sh '''
+          set +e
+          terraform output -json > tf_output.json
+          echo "tf_output.json generated"
+        '''
       }
     }
 
-    stage('Ansible Run (security_check)') {
+    stage('Generate Inventory (apply only)') {
+      when { expression { return params.MODE == 'apply' } }
       steps {
-        withCredentials([sshUserPrivateKey(credentialsId: 'bastion-ssh-key', keyFileVariable: 'SSH_KEY')]) {
-          sh '''
-            set -e
-            export ANSIBLE_PRIVATE_KEY_FILE="$SSH_KEY"
-            export ANSIBLE_CONFIG="$PWD/ansible/ansible.cfg"
-
-            # ✅ fetched_logs가 ansible 폴더 아래에 떨어지게 실행 위치를 ansible로 고정
-            cd ansible
-            ansible-playbook -i ../inventory.json playbooks/security_check.yml
-          '''
-        }
+        sh '''
+          set -e
+          python3 scripts/tf_inventory.py > inventory.json
+          echo "inventory.json generated"
+        '''
       }
     }
   }
 
   post {
     always {
-      echo "🧹 Pipeline finished"
-      archiveArtifacts artifacts: 'tf_output.json,inventory.json,tfplan', fingerprint: true, allowEmptyArchive: true
-      archiveArtifacts artifacts: 'ansible/fetched_logs/**', fingerprint: false, allowEmptyArchive: true
-    }
-    failure {
-      echo "❌ Pipeline FAILED"
+      archiveArtifacts artifacts: 'tfplan,tf_output.json,inventory.json,apply_done.txt', allowEmptyArchive: true
     }
   }
 }
