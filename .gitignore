@@ -4,9 +4,13 @@
 *.tfstate.backup
 *.tfvars
 *.tfvars.backup
+.terraform.lock.hcl
+tf_output.json
+inventory.json
 
 # Crash logs
 crash.log
+*.log
 
 # CLI config files
 .terraformrc
