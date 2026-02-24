@@ -48,24 +48,11 @@ resource "nhncloud_networking_port_v2" "service_port" {
     nhncloud_networking_secgroup_v2.service_sg.id
   ]
 
-  # 고정 IP 주면 사용
-  dynamic "fixed_ip" {
-    for_each = each.value.service_fixed_ip != null ? [1] : []
-    content {
-      subnet_id  = local.service_subnet_id
-      ip_address = each.value.service_fixed_ip
-    }
-  }
-
-  # 고정 IP 안 주면 subnet만 지정해서 자동 할당 (중요!)
-  dynamic "fixed_ip" {
-    for_each = each.value.service_fixed_ip != null ? [] : [1]
-    content {
-      subnet_id = local.service_subnet_id
-    }
+  # 서비스 포트 IP는 자동할당 (서브넷만 지정)
+  fixed_ip {
+    subnet_id = local.service_subnet_id
   }
 }
-
 
 ########################################
 # (3) Floating IP는 "fip 모드"에서만 생성/연결 (인스턴스별 1개)

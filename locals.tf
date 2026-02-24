@@ -4,18 +4,13 @@ locals {
   lb_enabled        = var.exposure_mode == "lb"
   bastion_enabled   = var.exposure_mode == "lb" && var.bastion_enabled
 
-  backend_keys = [for i in range(var.backend_count) : format("rocky-%02d", i + 1)]
+  backend_keys = [for i in range(var.rocky_count) : format("rocky-%02d", i + 1)]
 
   backends = {
     for i, k in local.backend_keys :
     k => {
       index = i
       name  = k
-
-      service_fixed_ip = (
-        contains(keys(var.backend_service_fixed_ips), k) &&
-        trimspace(var.backend_service_fixed_ips[k]) != ""
-      ) ? trimspace(var.backend_service_fixed_ips[k]) : null
     }
   }
 

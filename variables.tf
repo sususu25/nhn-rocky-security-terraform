@@ -123,18 +123,16 @@ variable "mgmt_fixed_ips" {
   default     = []
 }
 
-variable "backend_count" {
+variable "rocky_count" {
   type        = number
-  description = "Number of backend instances"
+  description = "Number of Rocky backend instances (1~30)"
   default     = 3
-}
 
-variable "backend_service_fixed_ips" {
-  type        = map(string)
-  description = "Fixed private IPs for backend service ports, keyed by backend name (e.g., rocky-01)."
-  default     = {}
+  validation {
+    condition     = var.rocky_count >= 1 && var.rocky_count <= 30
+    error_message = "rocky_count must be between 1 and 30."
+  }
 }
-
 
 ########################################
 # Bastion (LB 모드에서 SSH 진입점)
