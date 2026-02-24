@@ -16,9 +16,9 @@ password   = "YOUR_API_PASSWORD"
 vpc_id     = "YOUR_VPC_UUID"
 vpc_name   = "YOUR_VPC_NAME"
 
-mgmt_subnet_id    = "MGMT_SUBNET_ID"     #동일 PVC
-service_subnet_id = "SERVICE_SUBNET_ID"  #동일 PVC
-subnet_id      = "YOUR_SUBNET_UUID"      #동일 PVC
+mgmt_subnet_id    = "MGMT_SUBNET_ID"     #동일 VPC
+service_subnet_id = "SERVICE_SUBNET_ID"  #동일 VPC
+subnet_id      = "YOUR_SUBNET_UUID"      #동일 VPC
 subnet_name    = "YOUR_SUBNET_NAME"
 subnet_shared  = false
 
