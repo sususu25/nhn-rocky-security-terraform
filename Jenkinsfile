@@ -4,8 +4,14 @@ pipeline {
   parameters {
     choice(
       name: 'MODE',
-      choices: ['plan', 'apply'],
-      description: 'apply: terraform apply까지 진행 / plan: terraform plan까지만 진행'
+      choices: ['plan', 'apply', 'destroy'],
+      description: 'Terraform execution mode: plan(계획), apply(적용), destroy(삭제)'
+    )
+
+    booleanParam(
+      name: 'DESTROY_CONFIRM',
+      defaultValue: false,
+      description: 'MODE=destroy일 때 true로 설정해야 destroy 실행'
     )
 
     choice(
@@ -55,12 +61,18 @@ pipeline {
     }
 
     stage('Terraform Validate') {
+      when {
+        expression { params.MODE == 'plan' || params.MODE == 'apply' }
+      }
       steps {
         sh 'terraform validate'
       }
     }
 
     stage('Terraform Plan') {
+      when {
+        expression { params.MODE == 'plan' || params.MODE == 'apply' }
+      }
       steps {
         withCredentials([file(credentialsId: 'terraform-tfvars', variable: 'TFVARS')]) {
           script {
@@ -95,6 +107,9 @@ pipeline {
     }
 
     stage('Export Outputs') {
+      when {
+        expression { params.MODE == 'apply' }
+      }
       steps {
         sh '''
           set +e
@@ -103,11 +118,37 @@ pipeline {
         '''
       }
     }
+
+    stage('Terraform Destroy') {
+      when {
+        allOf {
+          expression { params.MODE == 'destroy' }
+          expression { params.DESTROY_CONFIRM == true }
+        }
+      }
+      steps {
+        input message: 'terraform destroy 진행할까요? (DESTROY_CONFIRM=true로 설정되어야 함)', ok: 'DESTROY'
+        withCredentials([file(credentialsId: 'terraform-tfvars', variable: 'TFVARS')]) {
+          script {
+            def lbVipValue = (params.VIP_MODE == 'manual') ? params.LB_VIP.trim() : ''
+
+            sh """
+              set -e
+              terraform destroy -input=false -auto-approve \\
+                -var-file="\$TFVARS" \\
+                -var="rocky_count=${params.ROCKY_COUNT}" \\
+                -var="lb_vip_address=${lbVipValue}"
+              echo "destroyed" > destroy_done.txt
+            """
+          }
+        }
+      }
+    }
   }
 
   post {
     always {
-      archiveArtifacts artifacts: 'tfplan,tf_output.json,apply_done.txt', allowEmptyArchive: true
+      archiveArtifacts artifacts: 'tfplan,tf_output.json,apply_done.txt,destroy_done.txt', allowEmptyArchive: true
       echo '🧹 Pipeline finished'
     }
     success {
