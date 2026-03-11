@@ -155,6 +155,20 @@ variable "bastion_mgmt_fixed_ip" {
   default     = ""
 }
 
+variable "jenkins_allowed_cidr" {
+  description = "Jenkins public IP in CIDR (e.g., 203.0.113.20/32). Used to allow SSH to bastion."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = (
+      var.jenkins_allowed_cidr == "" ||
+      can(regex("^\\d+\\.\\d+\\.\\d+\\.\\d+\\/\\d+$", var.jenkins_allowed_cidr))
+    )
+    error_message = "jenkins_allowed_cidr must be empty or in CIDR format like 203.0.113.20/32"
+  }
+}
+
 ########################################
 # HA VIP (allowed_address_pairs)
 ########################################

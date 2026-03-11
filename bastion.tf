@@ -17,6 +17,21 @@ resource "nhncloud_networking_secgroup_rule_v2" "bastion_ssh_in" {
   port_range_max    = 22
   remote_ip_prefix  = var.my_ip_cidr
   security_group_id = nhncloud_networking_secgroup_v2.bastion_sg[0].id
+
+}
+
+resource "nhncloud_networking_secgroup_rule_v2" "bastion_ssh_in_from_jenkins" {
+  count = (
+    local.bastion_enabled && trimspace(var.jenkins_allowed_cidr) != ""
+  ) ? 1 : 0
+
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 22
+  port_range_max    = 22
+  remote_ip_prefix  = var.jenkins_allowed_cidr
+  security_group_id = nhncloud_networking_secgroup_v2.bastion_sg[0].id
 }
 
 # Bastion mgmt 포트

@@ -27,6 +27,7 @@ flavor_name  = "YOUR_FLAVOR_NAME"
 image_name   = "YOUR_IMAGE_NAME"
 
 my_ip_cidr    = "YOUR_PUBLIC_IP/32"
+jenkins_allowed_cidr = "JENKINS_PUBLIC_IP/32"
 
 create_floating_ip = true
 floating_ip_pool = "YOUR_FIP_POOL"
