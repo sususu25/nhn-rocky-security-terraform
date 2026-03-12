@@ -1,22 +1,15 @@
-# NHN Cloud Terraform: Existing VPC/Subnet 기반 인스턴스 프로비저닝
-
-## 개요
-본 프로젝트는 NHN Cloud 환경에서 기존에 구축된 VPC 및 Subnet을 참조하여,
-동일한 인스턴스 구성을 Terraform(IaC)으로 자동 생성·관리하기 위한 예제입니다.
-인프라 구성을 코드로 표준화함으로써 환경 간 구성 편차를 제거하고,
-변경 이력을 코드로 관리하여 운영 효율성과 재현성을 확보하는 것을 목표로 합니다.
-
 ## Directory Structure
 
 - provider.tf        : Cloud provider 설정
 - versions.tf        : Terraform / Provider 버전 고정
 - variables.tf       : 입력 변수 정의
-- terraform.tfvars   : 환경별 실제 값
+- terraform.tfvars   : 환경별 실제 값 (로컬/Jenkins에서 별도 관리)
 - instance.tf        : Compute 인스턴스 정의
 - security_group.tf  : 보안그룹 및 포트 정책
 - lb.tf              : Load Balancer 설정
 - bastion.tf         : Bastion 호스트 구성
 - outputs.tf         : 주요 리소스 출력값
+- Jenkinsfile        : Jenkins Pipeline 정의 (`plan / apply / destroy`)
 
 ## 생성 리소스 (Terraform이 생성)
 - Security Group 
@@ -34,7 +27,7 @@
 
 ## 전제 조건 (기존에 존재해야 하며 Terraform이 조회)
 - VPC: `vpc_id`
-- Subnet: `subnet_id`, `mgmt_subnet_id', 'service_subnet_id'
+- Subnet: `subnet_id`, `mgmt_subnet_id`, `service_subnet_id`
 - Keypair: `keypair_name`
 - Image / Flavor: `image_name`, `flavor_name`
 
@@ -43,6 +36,8 @@
 - Network: `vpc_id`, `vpc_name`, `subnet_id`, `subnet_shared`
 - Instance: `keypair_name`, `flavor_name`, `image_name`, `backend_count`, `exposure_mode` *(`lb` 또는 `fip`)*
 - Security: `my_ip_cidr` (예: `203.0.113.10/32`)
+- Jenkins에서 Bastion SSH 접근이 필요한 경우:
+  - `jenkins_allowed_cidr` (예: `198.51.100.25/32`)
 
 - (LB 모드 사용 시)
   - `bastion_enabled` *(권장: `true` — LB 모드에서 SSH/Ansible 진입점 필요)*
@@ -62,6 +57,33 @@
 비밀번호(`password`)는 파일에 저장하지 않고 환경변수로 주입하는 방식을 권장합니다.
 - PowerShell: `$env:TF_VAR_password="NHN_CLOUD_API_PASSWORD"`
 - bash: `export TF_VAR_password="NHN_CLOUD_API_PASSWORD"`
+
+다만 Jenkins Pipeline 실행 시에는 실제 환경값이 포함된 `terraform.tfvars`를
+**사용자가 수동으로 업로드한 File Credential**로 주입하는 방식을 사용합니다.
+
+## Jenkins Pipeline 실행 방식
+
+이 프로젝트는 Jenkins에서 다음 모드로 실행할 수 있습니다.
+
+- `plan`    : 변경 사항 미리 확인
+- `apply`   : 리소스 생성/변경 적용
+- `destroy` : 리소스 삭제
+
+추가 파라미터 예시:
+- `ROCKY_COUNT`
+- `VIP_MODE`
+- `LB_VIP`
+- `DESTROY_CONFIRM`
+
+### Jenkins에서 사용자가 수동으로 추가해야 하는 것
+- 실제 환경값이 담긴 `terraform.tfvars` 파일
+- Jenkins 등록 방식:
+  - **Kind**: `Secret file`
+  - **ID**: `terraform-tfvars`
+
+즉, Git에는 예시/코드만 두고  
+실제 `tenant_id`, `user_name`, `password`, `image_name`, `keypair_name`, `my_ip_cidr`,
+`jenkins_allowed_cidr` 등의 값은 사용자가 작성한 `terraform.tfvars`를 Jenkins에 업로드하여 사용합니다.
 
 ## Terraform 실행 명령어
 - `terraform fmt -recursive`
@@ -107,12 +129,13 @@ By standardizing infrastructure as code, it minimizes configuration drift across
 - provider.tf        : Cloud provider configuration
 - versions.tf        : Terraform and provider version constraints
 - variables.tf       : Input variable definitions
-- terraform.tfvars   : Environment-specific values
+- terraform.tfvars   : Environment-specific values (managed locally or injected from Jenkins)
 - instance.tf        : Compute instance definitions
 - security_group.tf  : Security groups and port policies
 - lb.tf              : Load Balancer configuration
 - bastion.tf         : Bastion host setup
 - outputs.tf         : Key resource outputs
+- Jenkinsfile        : Jenkins Pipeline definition (`plan / apply / destroy`)
 
 ## Resources Created (Provisioned by Terraform)
 - Security Groups
@@ -130,21 +153,19 @@ By standardizing infrastructure as code, it minimizes configuration drift across
 ### Additional resources when `exposure_mode = "fip"`
 - Floating IPs on backend `mgmt_port` (N, one per server)
 
----
-
 ## Prerequisites (Must Exist and Will Be Looked Up by Terraform)
 - VPC: `vpc_id`
 - Subnets: `subnet_id`, `mgmt_subnet_id`, `service_subnet_id`
 - Keypair: `keypair_name`
 - Image / Flavor: `image_name`, `flavor_name`
 
----
-
 ## Required User Configuration
 - Provider: `region`, `auth_url`, `tenant_id`, `user_name`, `password`
 - Network: `vpc_id`, `vpc_name`, `subnet_id`, `subnet_shared`
 - Instance: `keypair_name`, `flavor_name`, `image_name`, `backend_count`, `exposure_mode` *(`lb` or `fip`)*
 - Security: `my_ip_cidr` (e.g., `203.0.113.10/32`)
+- If Jenkins needs SSH access to Bastion:
+  - `jenkins_allowed_cidr` (e.g., `198.51.100.25/32`)
 
 ### (When using LB mode)
 - `bastion_enabled` *(recommended: `true` — required as an SSH/Ansible entry point in LB mode)*
@@ -154,8 +175,6 @@ By standardizing infrastructure as code, it minimizes configuration drift across
 - `service_subnet_id` *(subnet for service NIC/LB; falls back to `subnet_id` if not set)*
 - `backend_service_fixed_ips` *(list of fixed IPs for service NIC; must match the CIDR of `service_subnet_id`)*
 - `lb_vip_address` *(fixed LB VIP; must match the CIDR of `service_subnet_id`)*
-
----
 
 ## Security Notes
 The following files may contain sensitive information and **must not be committed to Git**:
@@ -167,7 +186,33 @@ It is recommended to inject `password` via environment variables instead of stor
 - PowerShell: `$env:TF_VAR_password="NHN_CLOUD_API_PASSWORD"`
 - bash: `export TF_VAR_password="NHN_CLOUD_API_PASSWORD"`
 
----
+For Jenkins Pipeline execution, actual environment values are injected through a
+**user-uploaded `terraform.tfvars` File Credential**.
+
+## Jenkins Pipeline Execution
+
+This project can be executed from Jenkins in the following modes:
+
+- `plan`    : preview infrastructure changes
+- `apply`   : create/update infrastructure
+- `destroy` : delete provisioned resources
+
+Additional parameters may include:
+- `ROCKY_COUNT`
+- `VIP_MODE`
+- `LB_VIP`
+- `DESTROY_CONFIRM`
+
+### What the user must upload manually in Jenkins
+- A real `terraform.tfvars` file containing environment-specific values
+- Jenkins registration method:
+  - **Kind**: `Secret file`
+  - **ID**: `terraform-tfvars`
+
+In other words, the repository keeps only the shared code and examples,
+while actual values such as `tenant_id`, `user_name`, `password`, `image_name`,
+`keypair_name`, `my_ip_cidr`, and `jenkins_allowed_cidr`
+are supplied by the user through Jenkins.
 
 ## Terraform Commands
 - `terraform fmt -recursive`
@@ -176,12 +221,8 @@ It is recommended to inject `password` via environment variables instead of stor
 - `terraform plan`
 - `terraform apply`
 
----
-
 ## Destroy Resources
 - `terraform destroy`
-
----
 
 ## Outputs (`terraform output`)
 - Endpoint
@@ -202,4 +243,3 @@ It is recommended to inject `password` via environment variables instead of stor
 
 - Floating IPs (only in `fip` mode)
   - `backend_mgmt_fips` *(map: mgmt public IP per backend)*
-
