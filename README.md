@@ -63,6 +63,10 @@
 
 ## Jenkins Pipeline 실행 방식
 
+<p align="center">
+  <img src="images/terraform_pipeline.png" width="800">
+</p>
+
 이 프로젝트는 Jenkins에서 다음 모드로 실행할 수 있습니다.
 
 - `plan`    : 변경 사항 미리 확인
